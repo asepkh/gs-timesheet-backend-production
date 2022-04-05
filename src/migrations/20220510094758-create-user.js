@@ -8,20 +8,20 @@ module.exports = {
         type: Sequelize.INTEGER,
       },
       firstName: {
-        defaultValue: null,
         type: Sequelize.STRING,
+        allowNull: false,
       },
       lastName: {
-        defaultValue: null,
         type: Sequelize.STRING,
+        defaultValue: "-",
       },
       email: {
-        defaultValue: null,
         type: Sequelize.STRING,
+        allowNull: false,
       },
       password: {
-        defaultValue: null,
         type: Sequelize.STRING,
+        allowNull: false,
       },
       profilePic: {
         type: Sequelize.STRING,
@@ -29,8 +29,8 @@ module.exports = {
           "https://freepikpsd.com/file/2019/10/default-profile-picture-png-1-Transparent-Images.png",
       },
       role: {
-        defaultValue: null,
         type: Sequelize.STRING,
+        defaultValue: "-",
       },
       isAdmin: {
         type: Sequelize.BOOLEAN,

@@ -4,8 +4,9 @@ import { successResponse, errorResponse } from "../../helpers";
 export const get = async (req, res) => {
   try {
     const id = req.params.id || null;
-    const page = req.query.page || 1,
-      limit = 10;
+    const page = req.query.page || null,
+      limit = req.query.limit || null;
+
     const result = req.params.id
       ? await Project.findOne({ where: { id } })
       : await Project.findAndCountAll({
@@ -13,8 +14,7 @@ export const get = async (req, res) => {
             ["createdAt", "DESC"],
             ["name", "ASC"],
           ],
-          offset: (page - 1) * limit,
-          limit,
+          ...((page && limit && { offset: (page - 1) * limit, limit }) || {}),
         });
     return successResponse(req, res, result);
   } catch (error) {
@@ -65,6 +65,26 @@ export const remove = async (req, res) => {
       id,
       message: "Successfully Deleted",
     });
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const id = req.params.id || null,
+      payload = req.body;
+
+    const user = await Project.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new Error("Project not found");
+    }
+
+    await Project.update(payload, { where: { id: user.id } });
+    return successResponse(req, res, payload);
   } catch (error) {
     return errorResponse(req, res, error.message);
   }

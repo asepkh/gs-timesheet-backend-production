@@ -1,25 +1,28 @@
-export const successResponse = (req, res, data, code = 200) => res.send({
-  code,
-  data,
-  success: true,
-});
+export const successResponse = (req, res, data, code = 200) =>
+  res.send({
+    code,
+    data,
+    success: true,
+  });
 
 export const errorResponse = (
   req,
   res,
-  errorMessage = 'Something went wrong',
+  errorMessage = "Something went wrong",
   code = 500,
-  error = {},
-) => res.status(500).json({
-  code,
-  errorMessage,
-  error,
-  data: null,
-  success: false,
-});
+  error = {}
+) =>
+  res.status(500).json({
+    code,
+    errorMessage,
+    error,
+    data: null,
+    success: false,
+  });
 
 export const validateEmail = (email) => {
-  const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  const re =
+    /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
   return re.test(String(email).toLowerCase());
 };
 
@@ -30,15 +33,49 @@ export const validateFields = (object, fields) => {
       errors.push(f);
     }
   });
-  return errors.length ? `${errors.join(', ')} are required fields.` : '';
+  return errors.length ? `${errors.join(", ")} are required fields.` : "";
 };
 
 export const uniqueId = (length = 13) => {
-  let result = '';
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = "";
+  const characters =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
+};
+
+export const toPlain = (response) => {
+  const flattenDataValues = ({ dataValues }) => {
+    const flattenedObject = {};
+
+    Object.keys(dataValues).forEach((key) => {
+      const dataValue = dataValues[key];
+
+      if (
+        Array.isArray(dataValue) &&
+        dataValue[0] &&
+        dataValue[0].dataValues &&
+        typeof dataValue[0].dataValues === "object"
+      ) {
+        flattenedObject[key] = dataValues[key].map(flattenDataValues);
+      } else if (
+        dataValue &&
+        dataValue.dataValues &&
+        typeof dataValue.dataValues === "object"
+      ) {
+        flattenedObject[key] = flattenDataValues(dataValues[key]);
+      } else {
+        flattenedObject[key] = dataValues[key];
+      }
+    });
+
+    return flattenedObject;
+  };
+
+  return Array.isArray(response)
+    ? response.map(flattenDataValues)
+    : flattenDataValues(response);
 };

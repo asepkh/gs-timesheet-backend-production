@@ -1,22 +1,39 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import axios from "axios";
+
 import { User } from "../../models";
 import { successResponse, errorResponse, uniqueId } from "../../helpers";
 
-export const allUsers = async (req, res) => {
+export const get = async (req, res) => {
   try {
-    const page = req.params.page || 1;
-    const limit = 2;
-    const users = await User.findAndCountAll({
-      order: [
-        ["createdAt", "DESC"],
-        ["firstName", "ASC"],
-      ],
-      offset: (page - 1) * limit,
-      limit,
-    });
-    return successResponse(req, res, { users });
+    const id = req.params.id || null;
+    const page = req.query.page || 1,
+      limit = req.query.limit || 10;
+
+    const result = id
+      ? await User.findOne({ where: { id } })
+      : await User.findAndCountAll({
+          order: [
+            ["createdAt", "DESC"],
+            ["firstName", "ASC"],
+          ],
+          offset: (page - 1) * limit,
+          limit,
+        });
+
+    return successResponse(
+      req,
+      res,
+      id
+        ? result
+        : {
+            ...result,
+            page,
+            limit,
+            totalPages: Math.ceil(result.count / limit),
+          }
+    );
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
@@ -24,7 +41,7 @@ export const allUsers = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, firstName, lastName, ...field } = req.body;
     if (process.env.IS_GOOGLE_AUTH_ENABLE === "true") {
       if (!req.body.code) {
         throw new Error("code must be defined");
@@ -45,7 +62,7 @@ export const register = async (req, res) => {
       }
     }
 
-    const user = await User.scope("withSecretColumns").findOne({
+    const user = await User.findOne({
       where: { email },
     });
     if (user) {
@@ -56,6 +73,7 @@ export const register = async (req, res) => {
       email,
       firstName,
       lastName,
+      ...field,
       password: reqPass,
       isVerified: false,
       verifyToken: uniqueId(),
@@ -106,8 +124,10 @@ export const login = async (req, res) => {
 export const profile = async (req, res) => {
   try {
     const { userId } = req.user;
-    const user = await User.findOne({ where: { id: userId } });
-    return successResponse(req, res, { user });
+    const user = await User.scope("withSecretColumns").findOne({
+      where: { id: userId },
+    });
+    return successResponse(req, res, user);
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
@@ -116,7 +136,7 @@ export const profile = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const { userId } = req.user;
-    const user = await User.scope("withSecretColumns").findOne({
+    const user = await User.findOne({
       where: { id: userId },
     });
 
@@ -124,6 +144,7 @@ export const changePassword = async (req, res) => {
       .createHash("md5")
       .update(req.body.oldPassword)
       .digest("hex");
+
     if (reqPass !== user.password) {
       throw new Error("Old password is incorrect");
     }
@@ -135,6 +156,53 @@ export const changePassword = async (req, res) => {
 
     await User.update({ password: newPass }, { where: { id: user.id } });
     return successResponse(req, res, {});
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const update = async (req, res) => {
+  try {
+    const id = req.params.id || req.user.id,
+      payload = req.body;
+
+    const user = await User.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await User.update(payload, { where: { id: user.id } });
+    return successResponse(req, res, payload);
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const remove = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const user = await User.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new Error("Project not found");
+    }
+
+    await User.destroy({
+      where: {
+        id,
+      },
+    });
+
+    return successResponse(req, res, {
+      id,
+      message: "Successfully Deleted",
+    });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }

@@ -9,9 +9,11 @@ module.exports = {
       },
       workHours: {
         type: Sequelize.INTEGER,
+        allowNull: false,
       },
       description: {
         type: Sequelize.TEXT,
+        defaultValue: "-",
       },
       date: {
         allowNull: false,

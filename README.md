@@ -140,7 +140,7 @@ Migration will create table users and seed some default users
 ```
 > GET : http:localhost:8000/api/me
 > Headers :
-        x-token (access token)
+        bearer (access token)
 > Response :
 {
     "code": 200,

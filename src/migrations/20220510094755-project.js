@@ -13,7 +13,7 @@ module.exports = {
       },
       description: {
         type: Sequelize.TEXT,
-        defaultValue: null,
+        defaultValue: "-",
       },
       createdAt: {
         allowNull: false,
