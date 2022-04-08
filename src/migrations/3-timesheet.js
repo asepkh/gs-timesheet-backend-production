@@ -26,14 +26,18 @@ module.exports = {
           model: "Users",
           key: "id",
         },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
       projectId: {
-        allowNull: false,
         type: Sequelize.INTEGER,
         references: {
           model: "Projects",
           key: "id",
         },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+        defaultValue: null,
       },
       createdAt: {
         allowNull: false,

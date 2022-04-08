@@ -4,7 +4,7 @@ module.exports = {
       "Projects",
       [
         {
-          name: "PUSINFOMAR TNI",
+          name: "Self Learning",
           createdAt: new Date(),
           updatedAt: new Date(),
         },

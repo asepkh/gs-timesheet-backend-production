@@ -1,22 +1,21 @@
-import { Project } from "../../models";
+import { WorkLocation } from "../../models";
 import { successResponse, errorResponse } from "../../helpers";
 
 export const get = async (req, res) => {
   try {
     const id = req.params.id || null;
-    const page = parseInt(req.query.page) || null,
-      limit = parseInt(req.query.limit) || null;
+    const page = req.query.page || null,
+      limit = req.query.limit || null;
 
     const result = req.params.id
-      ? await Project.findOne({ where: { id } })
-      : await Project.findAndCountAll({
+      ? await WorkLocation.findOne({ where: { id } })
+      : await WorkLocation.findAndCountAll({
           order: [
-            ["createdAt", "DESC"],
             ["name", "ASC"],
+            ["createdAt", "DESC"],
           ],
           ...((page && limit && { offset: (page - 1) * limit, limit }) || {}),
         });
-
     return successResponse(
       req,
       res,
@@ -38,15 +37,16 @@ export const create = async (req, res) => {
   try {
     const payload = req.body,
       { name } = payload;
-    const project = await Project.findOne({
+    const workLocation = await WorkLocation.findOne({
       where: { name },
     });
 
-    if (project) {
-      throw new Error("Project already exists with same name");
+    if (workLocation) {
+      throw new Error("Work location already exists with same name");
     }
 
-    const result = await Project.create(payload);
+    const result = await WorkLocation.create(payload);
+    console.log(result);
 
     return successResponse(req, res, result);
   } catch (error) {
@@ -58,15 +58,15 @@ export const remove = async (req, res) => {
   try {
     const id = req.params.id;
 
-    const project = await Project.findOne({
+    const workLocation = await WorkLocation.findOne({
       where: { id },
     });
 
-    if (!project) {
-      throw new Error("Project not found");
+    if (!workLocation) {
+      throw new Error("Work location not found");
     }
 
-    await Project.destroy({
+    await WorkLocation.destroy({
       where: {
         id,
       },
@@ -86,15 +86,15 @@ export const update = async (req, res) => {
     const id = req.params.id || null,
       payload = req.body;
 
-    const user = await Project.findOne({
+    const user = await WorkLocation.findOne({
       where: { id },
     });
 
     if (!user) {
-      throw new Error("Project not found");
+      throw new Error("Work location not found");
     }
 
-    await Project.update(payload, { where: { id: user.id } });
+    await WorkLocation.update(payload, { where: { id: user.id } });
     return successResponse(req, res, payload);
   } catch (error) {
     return errorResponse(req, res, error.message);

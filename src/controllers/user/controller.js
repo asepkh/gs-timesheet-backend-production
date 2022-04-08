@@ -9,14 +9,14 @@ export const get = async (req, res) => {
   try {
     const id = req.params.id || null;
     const page = req.query.page || 1,
-      limit = req.query.limit || 10;
+      limit = req.query.limit || 8;
 
     const result = id
       ? await User.findOne({ where: { id } })
       : await User.findAndCountAll({
           order: [
-            ["createdAt", "DESC"],
             ["firstName", "ASC"],
+            ["lastName", "ASC"],
           ],
           offset: (page - 1) * limit,
           limit,
@@ -25,13 +25,13 @@ export const get = async (req, res) => {
     return successResponse(
       req,
       res,
+      result,
       id
-        ? result
+        ? null
         : {
-            ...result,
             page,
             limit,
-            totalPages: Math.ceil(result.count / limit),
+            totalPages: Math.ceil(result.count / limit) || null,
           }
     );
   } catch (error) {
@@ -95,10 +95,12 @@ export const login = async (req, res) => {
     if (!user) {
       throw new Error("Incorrect Email Id/Password");
     }
+
     const reqPass = crypto
       .createHash("md5")
       .update(req.body.password || "")
       .digest("hex");
+
     if (reqPass !== user.password) {
       throw new Error("Incorrect Email Id/Password");
     }
@@ -135,26 +137,12 @@ export const profile = async (req, res) => {
 
 export const changePassword = async (req, res) => {
   try {
-    const { userId } = req.user;
-    const user = await User.findOne({
-      where: { id: userId },
-    });
-
-    const reqPass = crypto
-      .createHash("md5")
-      .update(req.body.oldPassword)
-      .digest("hex");
-
-    if (reqPass !== user.password) {
-      throw new Error("Old password is incorrect");
-    }
-
     const newPass = crypto
       .createHash("md5")
       .update(req.body.newPassword)
       .digest("hex");
 
-    await User.update({ password: newPass }, { where: { id: user.id } });
+    await User.update({ password: newPass }, { where: { id: req.user.id } });
     return successResponse(req, res, {});
   } catch (error) {
     return errorResponse(req, res, error.message);

@@ -1,8 +1,12 @@
-export const successResponse = (req, res, data, code = 200) =>
+import moment from "moment";
+import api from "../services/api";
+
+export const successResponse = (req, res, data, any = {}, code = 200) =>
   res.send({
     code,
     data,
     success: true,
+    ...any,
   });
 
 export const errorResponse = (
@@ -78,4 +82,76 @@ export const toPlain = (response) => {
   return Array.isArray(response)
     ? response.map(flattenDataValues)
     : flattenDataValues(response);
+};
+
+export const workdayCount = (start, end) => {
+  var first = start.clone().endOf("week"); // end of first week
+  var last = end.clone().startOf("week"); // start of last week
+  var days = (last.diff(first, "days") * 5) / 7; // this will always multiply of 7
+  var wfirst = first.day() - start.day(); // check first week
+  if (start.day() == 0) --wfirst; // -1 if start with sunday
+  var wlast = end.day() - last.day(); // check last week
+  if (end.day() == 6) --wlast; // -1 if end with saturday
+  return wfirst + Math.floor(days) + wlast; // get the total
+};
+
+export const sumArrayOfObject = (arr, key) =>
+  arr.reduce((a, b) => +a + +b[key], 0) || null;
+
+export const calendarCalculation = async (date) => {
+  const startDate = moment(date).startOf("month"),
+    endDate = moment(date).endOf("month");
+
+  try {
+    const allHolidays = await api.get(
+      "http://api-harilibur.vercel.app",
+      "/api",
+      {
+        params: {
+          month: moment(date).format("M"),
+          year: moment(date).format("YYYY"),
+        },
+      }
+    );
+
+    const nationalHolidays = await allHolidays
+      .filter((d) => d.is_national_holiday)
+      .map((d) => ({
+        ...d,
+        holiday_name:
+          d.holiday_name.slice(0, 27) +
+          (d.holiday_name.length > 28 ? ".." : ""),
+      }));
+
+    const totalWorkDays =
+      workdayCount(startDate, endDate) - (nationalHolidays.length || 0);
+    const totalHolidays =
+      endDate.diff(startDate, "days") -
+      totalWorkDays +
+      (nationalHolidays.length || 0);
+    const totalWorkHours = totalWorkDays * 8;
+    const totalDays = moment(endDate).diff(startDate, "days");
+
+    return {
+      nationalHolidays,
+      totalNationalHolidays: nationalHolidays.length || 0,
+      totalWorkDays,
+      totalHolidays,
+      totalDays,
+      totalWorkHours,
+    };
+  } catch (error) {
+    const totalWorkDays = workdayCount(startDate, endDate);
+    const totalHolidays = endDate.diff(startDate, "days") - totalWorkDays;
+    const totalWorkHours = totalWorkDays * 8;
+    const totalDays = moment(endDate).diff(startDate, "days");
+
+    return {
+      error,
+      totalWorkDays,
+      totalHolidays,
+      totalDays,
+      totalWorkHours,
+    };
+  }
 };

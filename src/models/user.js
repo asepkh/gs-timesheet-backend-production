@@ -62,6 +62,7 @@ module.exports = (sequelize, DataTypes) => {
   );
   User.associate = function (models) {
     User.hasMany(models.Timesheet, {
+      as: "timesheets",
       foreignKey: "userId",
       onDelete: "CASCADE",
     });

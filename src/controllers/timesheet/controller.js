@@ -1,8 +1,40 @@
 import moment from "moment";
 import { Op } from "sequelize";
 
-import { Timesheet } from "../../models";
-import { successResponse, errorResponse, toPlain } from "../../helpers";
+import { Timesheet, User } from "../../models";
+import {
+  successResponse,
+  errorResponse,
+  toPlain,
+  calendarCalculation,
+  sumArrayOfObject,
+} from "../../helpers";
+
+const transformTimesheet = (d) => {
+  const totalHours = sumArrayOfObject(d.timesheets, "workHours") || 0;
+  return {
+    ...d,
+    timesheets: {
+      totalHours,
+      descriptions: d.timesheets
+        .map((t) =>
+          t.izin !== "hadir" || t.description !== null
+            ? {
+                date: t.date,
+                description: `${
+                  t.izin.charAt(0).toUpperCase() + t.izin.slice(1)
+                } - ${t.description || "Tanpa Keterangan"}`,
+              }
+            : null
+        )
+        .filter((t) => t !== null),
+      cuti: d.timesheets.filter((t) => t.izin === "cuti").length,
+      izin: d.timesheets.filter((t) => t.izin === "izin").length,
+      sakit: d.timesheets.filter((t) => t.izin === "sakit").length,
+      hadir: d.timesheets.filter((t) => t.izin === "hadir").length,
+    },
+  };
+};
 
 export const get = async (req, res) => {
   try {
@@ -11,11 +43,8 @@ export const get = async (req, res) => {
       date = req.query.date,
       userId = req.query.id || req.user.id;
 
-    const timesheets = await Timesheet.findAll({
-      order: [
-        ["createdAt", "DESC"],
-        ["date", "ASC"],
-      ],
+    const data = await Timesheet.findAll({
+      order: [["date", "ASC"]],
       where: {
         userId,
         date: {
@@ -28,12 +57,25 @@ export const get = async (req, res) => {
       ...((page && limit && { offset: (page - 1) * limit, limit }) || {}),
     });
 
-    const result = await toPlain(timesheets).map((d) => ({
+    const timesheets = await toPlain(data).map((d) => ({
       ...d,
       date: moment(d.date).format("YYYY-MM-DD"),
     }));
 
-    return successResponse(req, res, result);
+    const calendarData = await calendarCalculation(date);
+    const result = {
+      timesheets,
+      timesheetsTotal: sumArrayOfObject(timesheets, "workHours"),
+      overtimeTotal:
+        sumArrayOfObject(timesheets, "workHours") - calendarData.totalHours,
+      ...calendarData,
+    };
+
+    return successResponse(req, res, result, {
+      page,
+      limit,
+      totalPages: Math.ceil(result.count / limit) || null,
+    });
   } catch (error) {
     return errorResponse(req, res, error.message);
   }
@@ -45,10 +87,16 @@ export const create = async (req, res) => {
       id = req.user.id || req.params.id,
       data = await timesheets.map((item) => ({ ...item, userId: id }));
 
-    await console.log(data);
+    // await console.log(data);
 
     const result = await Timesheet.bulkCreate(data, {
-      updateOnDuplicate: ["workHours", "description", "projectId"],
+      updateOnDuplicate: [
+        "workHours",
+        "description",
+        "projectId",
+        "izin",
+        "workLocationId",
+      ],
     });
 
     return successResponse(req, res, result);
@@ -63,7 +111,7 @@ export const remove = async (req, res) => {
       userId = req.user.id,
       date = req.query.date || null;
 
-    const query = date
+    const query = !id
       ? {
           where: {
             userId,
@@ -75,9 +123,9 @@ export const remove = async (req, res) => {
             },
           },
         }
-      : { where: id };
+      : { where: { id } };
 
-    const project = date
+    const project = id
       ? await Timesheet.findAndCountAll(query)
       : await Timesheet.findOne(query);
 
@@ -91,6 +139,79 @@ export const remove = async (req, res) => {
       id,
       message: "Successfully Deleted",
     });
+  } catch (error) {
+    return errorResponse(req, res, error.message);
+  }
+};
+
+export const getDataSummary = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1,
+      limit = req.query.limit || 8,
+      date = req.query.date || moment(date),
+      id = req.params.id || null;
+
+    const include = {
+      model: Timesheet,
+      as: "timesheets",
+      attributes: {
+        exclude: ["createdAt", "updatedAt"],
+      },
+      where: {
+        date: {
+          [Op.and]: {
+            [Op.gte]: moment(date).startOf("month"),
+            [Op.lte]: moment(date).endOf("month"),
+          },
+        },
+      },
+    };
+
+    const data = id
+      ? await User.findOne({
+          where: { id },
+          include,
+        })
+      : await User.findAll({
+          order: [
+            ["firstName", "ASC"],
+            ["lastName", "ASC"],
+          ],
+          include,
+          attributes: {
+            exclude: [
+              "createdAt",
+              "updatedAt",
+              "email",
+              "isVerified",
+              "gender",
+              "phone",
+              "profilePic",
+              "isAdmin",
+            ],
+          },
+          ...((page && limit && { offset: (page - 1) * limit, limit }) || {}),
+        });
+
+    // console.log(toPlain(data)[0].timesheets);
+    const userTimesheets = id
+      ? await transformTimesheet(toPlain(data))
+      : await toPlain(data).map((d) => transformTimesheet(d));
+
+    const calendarData = await calendarCalculation(date);
+    return successResponse(
+      req,
+      res,
+      userTimesheets,
+      id
+        ? null
+        : {
+            page,
+            limit,
+            totalPages: Math.ceil(userTimesheets.length / limit) || null,
+            ...calendarData,
+          }
+    );
   } catch (error) {
     return errorResponse(req, res, error.message);
   }

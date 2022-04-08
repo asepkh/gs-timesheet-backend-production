@@ -7,6 +7,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       defaultValue: null,
     },
+    izin: {
+      type: DataTypes.ENUM("hadir", "sakit", "izin", "cuti"),
+      defaultValue: "hadir",
+    },
     date: {
       type: DataTypes.DATE,
       allowNull: false,
