@@ -12,7 +12,7 @@ import adminMiddleware from "./src/middleware/adminAuth";
 import errorHandler from "./src/middleware/errorHandler";
 
 dotenv.config();
-require("./src/config/sequelize");
+// require("./src/config/sequelize");
 
 const app = express();
 app.use(
