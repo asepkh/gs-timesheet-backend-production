@@ -100,7 +100,9 @@ export const sumArrayOfObject = (arr, key) =>
 
 export const calendarCalculation = async (date) => {
   const startDate = moment(date).startOf("month"),
-    endDate = moment(date).endOf("month");
+    endDate = moment(date).endOf("month"),
+    isWeekend = (date) =>
+      moment(date).isoWeekday() === 6 || moment(date).isoWeekday() === 7;
 
   try {
     const allHolidays = await api.get(
@@ -123,14 +125,12 @@ export const calendarCalculation = async (date) => {
           (d.holiday_name.length > 28 ? ".." : ""),
       }));
 
+    const totalDays = moment(endDate).daysInMonth();
     const totalWorkDays =
-      workdayCount(startDate, endDate) - (nationalHolidays.length || 0);
-    const totalHolidays =
-      endDate.diff(startDate, "days") -
-      totalWorkDays +
-      (nationalHolidays.length || 0);
+      workdayCount(startDate, endDate) -
+      nationalHolidays.filter((d) => !isWeekend(d.holiday_date)).length;
+    const totalHolidays = totalDays - totalWorkDays;
     const totalWorkHours = totalWorkDays * 8;
-    const totalDays = moment(endDate).diff(startDate, "days");
 
     return {
       nationalHolidays,
