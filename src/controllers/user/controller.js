@@ -151,8 +151,11 @@ export const changePassword = async (req, res) => {
 
 export const update = async (req, res) => {
   try {
+    const password = req.body.password
+      ? crypto.createHash("md5").update(req.body.password).digest("hex")
+      : undefined;
     const id = req.params.id || req.user.id,
-      payload = req.body;
+      payload = { ...req.body, ...(password ? { password } : {}) };
 
     const user = await User.findOne({
       where: { id },
