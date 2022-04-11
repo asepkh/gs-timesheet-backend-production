@@ -1,17 +1,17 @@
-require('@babel/register');
+require("@babel/register");
 /* eslint-disable no-console */
-const chalk = require('chalk');
-const dotenv = require('dotenv');
-const cluster = require('cluster');
-const numCores = require('os').cpus().length;
-const app = require('./app');
+const chalk = require("chalk");
+const dotenv = require("dotenv");
+const cluster = require("cluster");
+const numCores = require("os").cpus().length;
+const app = require("./app");
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (uncaughtExc) => {
+process.on("uncaughtException", (uncaughtExc) => {
   // Won't execute
-  console.log(chalk.bgRed('UNCAUGHT EXCEPTION! 💥 Shutting down...'));
-  console.log('uncaughtException Err::', uncaughtExc);
-  console.log('uncaughtException Stack::', JSON.stringify(uncaughtExc.stack));
+  console.log(chalk.bgRed("UNCAUGHT EXCEPTION! 💥 Shutting down..."));
+  console.log("uncaughtException Err::", uncaughtExc);
+  console.log("uncaughtException Stack::", JSON.stringify(uncaughtExc.stack));
   process.exit(1);
 });
 
@@ -29,26 +29,26 @@ const setupWorkerProcesses = () => {
     workers.push(cluster.fork());
 
     // Receive messages from worker process
-    workers[i].on('message', (message) => {
+    workers[i].on("message", (message) => {
       console.log(message);
     });
   }
 
   // Process is clustered on a core and process id is assigned
-  cluster.on('online', (worker) => {
+  cluster.on("online", (worker) => {
     console.log(`Worker ${worker.process.pid} is listening`);
   });
 
   // If any of the worker process dies then start a new one by simply forking another one
-  cluster.on('exit', (worker, code, signal) => {
+  cluster.on("exit", (worker, code, signal) => {
     console.log(
-      `Worker ${worker.process.pid} died with code: ${code}, and signal: ${signal}`,
+      `Worker ${worker.process.pid} died with code: ${code}, and signal: ${signal}`
     );
-    console.log('Starting a new worker');
+    console.log("Starting a new worker");
     cluster.fork();
     workers.push(cluster.fork());
     // Receive messages from worker process
-    workers[workers.length - 1].on('message', (message) => {
+    workers[workers.length - 1].on("message", (message) => {
       console.log(message);
     });
   });
@@ -56,7 +56,7 @@ const setupWorkerProcesses = () => {
 
 // Setup an express server and define port to listen all incoming requests for this application
 const setUpExpress = () => {
-  dotenv.config({ path: '.env' });
+  dotenv.config();
 
   const port = process.env.APP_PORT || 3000;
 
@@ -65,15 +65,15 @@ const setUpExpress = () => {
   });
 
   // In case of an error
-  app.on('error', (appErr, appCtx) => {
-    console.error('app error', appErr.stack);
-    console.error('on url', appCtx.req.url);
-    console.error('with headers', appCtx.req.headers);
+  app.on("error", (appErr, appCtx) => {
+    console.error("app error", appErr.stack);
+    console.error("on url", appCtx.req.url);
+    console.error("with headers", appCtx.req.headers);
   });
 
   // Handle unhandled promise rejections
-  process.on('unhandledRejection', (err) => {
-    console.log(chalk.bgRed('UNHANDLED REJECTION! 💥 Shutting down...'));
+  process.on("unhandledRejection", (err) => {
+    console.log(chalk.bgRed("UNHANDLED REJECTION! 💥 Shutting down..."));
     console.log(err.name, err.message);
     // Close server & exit process
     server.close(() => {
@@ -81,10 +81,10 @@ const setUpExpress = () => {
     });
   });
 
-  process.on('SIGTERM', () => {
-    console.log('👋 SIGTERM RECEIVED. Shutting down gracefully');
+  process.on("SIGTERM", () => {
+    console.log("👋 SIGTERM RECEIVED. Shutting down gracefully");
     server.close(() => {
-      console.log('💥 Process terminated!');
+      console.log("💥 Process terminated!");
     });
   });
 };
@@ -100,7 +100,7 @@ const setupServer = (isClusterRequired) => {
   }
 };
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === "production") {
   setupServer(true);
 } else {
   setupServer(false);
