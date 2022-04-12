@@ -21,6 +21,7 @@ const transformTimesheet = (d) => {
           t.izin !== "hadir" || t.description !== null
             ? {
                 date: t.date,
+                izin: t.izin,
                 description: `${
                   t.izin.charAt(0).toUpperCase() + t.izin.slice(1)
                 } - ${t.description || "Tanpa Keterangan"}`,
@@ -29,16 +30,22 @@ const transformTimesheet = (d) => {
         )
         .filter((t) => t !== null),
       workLocations: [
-        ...new Set(d.timesheets.map((item) => item.workLocation.name)),
-      ].map((item) => ({
-        name: item,
-        workHours: sumArrayOfObject(
-          d.timesheets.filter((t) =>
-            t.workLocation ? t.workLocation.name === item : null
-          ),
-          "workHours"
+        ...new Set(
+          d.timesheets.map(
+            (item) => (item.workLocation && item.workLocation.name) || null
+          )
         ),
-      })) /*d.timesheets
+      ]
+        .filter((t) => t !== null)
+        .map((item) => ({
+          name: item,
+          workHours: sumArrayOfObject(
+            d.timesheets.filter((t) =>
+              t.workLocation ? item === (t.workLocation.name || null) : null
+            ),
+            "workHours"
+          ),
+        })) /*d.timesheets
         .map((t) =>
           t.workLocation !== null
             ? {
