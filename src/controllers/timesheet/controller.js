@@ -29,22 +29,18 @@ const transformTimesheet = (d) => {
         )
         .filter((t) => t !== null),
       workLocations: [
-        ...new Set(
-          d.timesheets.map((item) =>
-            item.workLocation
-              ? {
-                  ...item.workLocation,
-                  workHours: sumArrayOfObject(
-                    d.timesheets.filter(
-                      (t) => t.workLocation === item.workLocation
-                    ),
-                    "workHours"
-                  ),
-                }
-              : null
-          )
-        ),
-      ].filter((t) => t !== null) /*d.timesheets
+        ...new Set(d.timesheets.map((item) => item.workLocation || null)),
+      ]
+        .filter((t) => t !== null)
+        .map((item) => ({
+          ...item,
+          workHours: sumArrayOfObject(
+            d.timesheets.filter((t) =>
+              t.workLocation ? t.workLocation.name === item.name : null
+            ),
+            "workHours"
+          ),
+        })) /*d.timesheets
         .map((t) =>
           t.workLocation !== null
             ? {
