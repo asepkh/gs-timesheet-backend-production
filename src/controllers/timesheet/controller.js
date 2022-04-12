@@ -1,7 +1,7 @@
 import moment from "moment";
 import { Op } from "sequelize";
 
-import { Timesheet, User } from "../../models";
+import { Timesheet, User, WorkLocation } from "../../models";
 import {
   successResponse,
   errorResponse,
@@ -28,6 +28,32 @@ const transformTimesheet = (d) => {
             : null
         )
         .filter((t) => t !== null),
+      workLocations: [
+        ...new Set(
+          d.timesheets.map((item) =>
+            item.workLocation
+              ? {
+                  ...item.workLocation,
+                  workHours: sumArrayOfObject(
+                    d.timesheets.filter(
+                      (t) => t.workLocation === item.workLocation
+                    ),
+                    "workHours"
+                  ),
+                }
+              : null
+          )
+        ),
+      ].filter((t) => t !== null) /*d.timesheets
+        .map((t) =>
+          t.workLocation !== null
+            ? {
+                date: t.date,
+                workLocation: t.workLocation,
+              }
+            : null
+        )
+        .filter((t) => t !== null),*/,
       cuti: d.timesheets.filter((t) => t.izin === "cuti").length,
       izin: d.timesheets.filter((t) => t.izin === "izin").length,
       sakit: d.timesheets.filter((t) => t.izin === "sakit").length,
@@ -157,6 +183,13 @@ export const getDataSummary = async (req, res) => {
       attributes: {
         exclude: ["createdAt", "updatedAt"],
       },
+      include: {
+        model: WorkLocation,
+        as: "workLocation",
+        attributes: {
+          exclude: ["createdAt", "updatedAt"],
+        },
+      },
       where: {
         date: {
           [Op.and]: {
@@ -206,9 +239,13 @@ export const getDataSummary = async (req, res) => {
       id
         ? null
         : {
-            page,
-            limit,
-            totalPages: Math.ceil(userTimesheets.length / limit) || null,
+            ...((page &&
+              limit && {
+                page,
+                limit,
+                totalPages: Math.ceil(userTimesheets.length / limit) || 0,
+              }) ||
+              {}),
             ...calendarData,
           }
     );

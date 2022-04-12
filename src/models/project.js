@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
   Project.associate = function (models) {
     // associations can be defined here
     Project.hasMany(models.Timesheet, {
+      as: "project",
       foreignKey: "projectId",
       onDelete: "CASCADE",
     });

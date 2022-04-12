@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
   WorkLocation.associate = function (models) {
     // associations can be defined here
     WorkLocation.hasMany(models.Timesheet, {
+      as: "workLocation",
       foreignKey: "workLocationId",
       onDelete: "CASCADE",
     });

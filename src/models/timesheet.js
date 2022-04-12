@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
     },
   });
   Timesheet.associate = function (models) {
-    // associations can be defined here
+    Timesheet.belongsTo(models.WorkLocation, { as: "workLocation" });
   };
   return Timesheet;
 };
