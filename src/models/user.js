@@ -61,9 +61,16 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   User.associate = function (models) {
+    User.hasMany(models.Reimbursement, {
+      as: "reimbursements",
+      foreignKey: "userId",
+      onUpdate: "CASCADE",
+      onDelete: "CASCADE",
+    });
     User.hasMany(models.Timesheet, {
       as: "timesheets",
       foreignKey: "userId",
+      onUpdate: "CASCADE",
       onDelete: "CASCADE",
     });
   };

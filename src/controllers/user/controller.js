@@ -126,7 +126,7 @@ export const login = async (req, res) => {
 export const profile = async (req, res) => {
   try {
     const { userId } = req.user;
-    const user = await User.scope("withSecretColumns").findOne({
+    const user = await User.findOne({
       where: { id: userId },
     });
     return successResponse(req, res, user);

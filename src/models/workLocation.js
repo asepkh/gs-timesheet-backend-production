@@ -4,15 +4,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
     },
     description: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       defaultValue: null,
     },
   });
   WorkLocation.associate = function (models) {
-    // associations can be defined here
     WorkLocation.hasMany(models.Timesheet, {
       as: "workLocation",
       foreignKey: "workLocationId",
+      onUpdate: "CASCADE",
       onDelete: "CASCADE",
     });
   };

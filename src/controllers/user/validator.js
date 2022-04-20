@@ -15,6 +15,12 @@ export const register = {
   },
 };
 
+export const remove = {
+  params: {
+    id: Joi.string().required(),
+  },
+};
+
 export const login = {
   body: {
     email: Joi.string().email().required(),

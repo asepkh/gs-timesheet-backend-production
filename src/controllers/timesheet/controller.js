@@ -22,18 +22,16 @@ const transformTimesheet = (d) => {
             ? {
                 date: t.date,
                 izin: t.izin,
-                description: `${
-                  t.izin.charAt(0).toUpperCase() + t.izin.slice(1)
-                } - ${t.description || "Tanpa Keterangan"}`,
+                description: `${t.izin.charAt(0).toUpperCase() + t.izin.slice(1)} - ${
+                  t.description || "Tanpa Keterangan"
+                }`,
               }
             : null
         )
         .filter((t) => t !== null),
       workLocations: [
         ...new Set(
-          d.timesheets.map(
-            (item) => (item.workLocation && item.workLocation.name) || null
-          )
+          d.timesheets.map((item) => (item.workLocation && item.workLocation.name) || null)
         ),
       ]
         .filter((t) => t !== null)
@@ -45,16 +43,7 @@ const transformTimesheet = (d) => {
             ),
             "workHours"
           ),
-        })) /*d.timesheets
-        .map((t) =>
-          t.workLocation !== null
-            ? {
-                date: t.date,
-                workLocation: t.workLocation,
-              }
-            : null
-        )
-        .filter((t) => t !== null),*/,
+        })),
       cuti: d.timesheets.filter((t) => t.izin === "cuti").length,
       izin: d.timesheets.filter((t) => t.izin === "izin").length,
       sakit: d.timesheets.filter((t) => t.izin === "sakit").length,
@@ -67,7 +56,7 @@ export const get = async (req, res) => {
   try {
     const page = req.query.page || null,
       limit = req.query.limit || null,
-      date = req.query.date,
+      date = req.query.date || moment().format("YYYY-M"),
       userId = req.query.id || req.user.id;
 
     const data = await Timesheet.findAll({
@@ -93,15 +82,14 @@ export const get = async (req, res) => {
     const result = {
       timesheets,
       timesheetsTotal: sumArrayOfObject(timesheets, "workHours"),
-      overtimeTotal:
-        sumArrayOfObject(timesheets, "workHours") - calendarData.totalHours,
+      overtimeTotal: sumArrayOfObject(timesheets, "workHours") - calendarData.totalHours,
       ...calendarData,
     };
 
     return successResponse(req, res, result, {
       page,
       limit,
-      totalPages: Math.ceil(result.count / limit) || null,
+      totalPages: Math.ceil(result.length / limit) || null,
     });
   } catch (error) {
     return errorResponse(req, res, error.message);
@@ -117,13 +105,7 @@ export const create = async (req, res) => {
     // await console.log(data);
 
     const result = await Timesheet.bulkCreate(data, {
-      updateOnDuplicate: [
-        "workHours",
-        "description",
-        "projectId",
-        "izin",
-        "workLocationId",
-      ],
+      updateOnDuplicate: ["workHours", "description", "projectId", "izin", "workLocationId"],
     });
 
     return successResponse(req, res, result);
@@ -152,11 +134,9 @@ export const remove = async (req, res) => {
         }
       : { where: { id } };
 
-    const project = id
-      ? await Timesheet.findAndCountAll(query)
-      : await Timesheet.findOne(query);
+    const timesheet = id ? await Timesheet.findAndCountAll(query) : await Timesheet.findOne(query);
 
-    if (!project) {
+    if (!timesheet) {
       throw new Error("Data not found");
     }
 
@@ -175,9 +155,10 @@ export const getDataSummary = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1,
       limit = req.query.limit || 8,
-      date = req.query.date || moment(date),
+      date = req.query.date || moment().format("YYYY-M"),
       id = req.params.id || null;
 
+    console.log(date);
     const include = {
       model: Timesheet,
       as: "timesheets",
@@ -194,8 +175,8 @@ export const getDataSummary = async (req, res) => {
       where: {
         date: {
           [Op.and]: {
-            [Op.gte]: moment(date).startOf("month"),
-            [Op.lte]: moment(date).endOf("month"),
+            [Op.gte]: moment(date, "YYYY-M").startOf("month"),
+            [Op.lte]: moment(date, "YYYY-M").endOf("month"),
           },
         },
       },

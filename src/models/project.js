@@ -4,12 +4,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
     },
     description: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       defaultValue: null,
     },
   });
   Project.associate = function (models) {
-    // associations can be defined here
     Project.hasMany(models.Timesheet, {
       as: "project",
       foreignKey: "projectId",
