@@ -1,4 +1,4 @@
-# GED Timesheet Backend
+# GS Timesheet Backend
 
 - Sample API ready for login
 - API middlewares for normal user and Admin user
